@@ -43,6 +43,7 @@ function TABELA_IRPF(competencia, coluna) {
     7: tabela.map(r => [r[6]]), // Desconto Simplificado
     8: tabela.map(r => [r[7]])  // Dependente Mensal
   }
+
   // Normaliza a data recebida → string dd/mm/yyyy
   let competenciaStr;
   if (competencia instanceof Date) {
