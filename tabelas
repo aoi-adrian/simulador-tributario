@@ -1,0 +1,130 @@
+/**
+ * Retorna a tabela de faixas de faturamento anual do Simples Nacional.
+ *
+ * @param {number} [coluna] Define o que será retornado:
+ *   - 1 → retorna apenas os nomes das faixas
+ *   - 2 → retorna apenas os limites mínimos
+ *   - 3 → retorna apenas os limites máximos
+ *   - qualquer outro valor ou omissão → retorna a tabela completa (nome + limite mínimo + limite máximo)
+ * 
+ * @return {Array} Retorna a matriz correspondente ao modo escolhido.
+ * @customfunction
+ */
+function FAIXAS_FATURAMENTO(coluna) {
+  const tabela = [
+    ["1ª Faixa", 0.00000000, 180000 ],
+    ["2ª Faixa", 180000.010, 360000 ],
+    ["3ª Faixa", 360000.010, 720000 ],
+    ["4ª Faixa", 720000.010, 1800000],
+    ["5ª Faixa", 1800000.01, 3600000],
+    ["6ª Faixa", 3600000.01, 4800000]
+  ];
+
+  const colunas = {
+    1: tabela.map(r => [r[0]]), // Faixas
+    2: tabela.map(r => [r[1]]), // Limite Mínimo
+    3: tabela.map(r => [r[2]])  // Limite Máximo
+  };
+  return colunas[coluna] || tabela;
+}
+
+/**
+ * Retorna a tabela do Simples Nacional – Anexo III.
+ * Inclui faixas, alíquotas nominais, parcelas a deduzir e percentuais
+ * de cada tributo, além do "ISS Excedente".
+ *
+ * @param {number|string} coluna Define o retorno:
+ *   (0 → tabela completa, 1 → Nominal, 2 → Parc. Deduzir, 3+ → tributos).
+ * @return {Array}
+ * @customfunction
+ */
+function TABELA_ANEXO_III(coluna){
+  const tabela = [
+      [0.060,  0,      0.04,   0.035,  0.1282, 0.0278, 0.434,  0.335],
+      [0.112,  9360,   0.04,   0.035,  0.1405, 0.0305, 0.434,  0.320],
+      [0.135,  17640,  0.04,   0.035,  0.1364, 0.0296, 0.434,  0.325],
+      [0.160,  35640,  0.04,   0.035,  0.1364, 0.0296, 0.434,  0.325],
+      [0.210,  125640, 0.04,   0.035,  0.1282, 0.0278, 0.434,  0.335],
+      [0.330,  648000, 0.35,   0.150,  0.1603, 0.0347, 0.305,  null ], // ISS não se aplica na 6ª faixa
+      [null,   null,   0.0602, 0.0526, 0.1928, 0.0418, 0.6526, null ]  // ISS Excedente
+      ]; 
+
+  const colunas = {
+    1: tabela.map(r => [r[0]]), // Alíquota Nominal
+    2: tabela.map(r => [r[1]]), // Parcela a Deduzir
+    3: tabela.map(r => [r[2]]), // IRPJ
+    4: tabela.map(r => [r[3]]), // CSLL
+    5: tabela.map(r => [r[4]]), // COFINS
+    6: tabela.map(r => [r[5]]), // PIS
+    7: tabela.map(r => [r[6]]), // CPP
+    8: tabela.map(r => [r[7]]), // ISS
+  }
+  return colunas[coluna] || tabela;
+}
+
+/**
+ * Retorna a tabela do Simples Nacional – Anexo IV.
+ * Contém faixas, alíquotas e percentuais de tributos,
+ * além da linha "ISS Excedente".
+ *
+ * @param {number|string} coluna Define a coluna a retornar
+ *   (0 → tabela completa, 1 → Nominal, 2 → Parc. Deduzir, 3+ → tributos).
+ * @return {Array}
+ * @customfunction
+ */
+function TABELA_ANEXO_IV(coluna){
+  const tabela = [
+    [0.045, 0     , 0.1880, 0.152, 0.1767, 0.0383, 0.445],
+    [0.09,  8100  , 0.1980, 0.152, 0.2055, 0.0445, 0.400],
+    [0.102, 12420 , 0.2080, 0.152, 0.1973, 0.0427, 0.400],
+    [0.14,  39780 , 0.1780, 0.192, 0.1890, 0.0410, 0.400],
+    [0.22,  183780, 0.1880, 0.192, 0.1808, 0.0392, 0.400],
+    [0.33,  828000, 0.5350, 0.215, 0.2055, 0.0445, null ], // ISS não se aplica na 6ª faixa
+    [null,  null,   0.3133, 0.320, 0.3013, 0.0654, null ]  // ISS Excedente
+  ];
+
+  const colunas = {
+    1: tabela.map(r => [r[0]]), // Alíquota Nominal
+    2: tabela.map(r => [r[1]]), // Parcela a Deduzir
+    3: tabela.map(r => [r[2]]), // IRPJ
+    4: tabela.map(r => [r[3]]), // CSLL
+    5: tabela.map(r => [r[4]]), // COFINS
+    6: tabela.map(r => [r[5]]), // PIS
+    7: tabela.map(r => [r[6]]), // ISS
+  };
+  return colunas[coluna] || tabela;
+}
+
+/**
+ * Retorna a tabela do Simples Nacional – Anexo V.
+ * Inclui faixas, alíquotas nominais, parcelas e percentuais de tributos,
+ * além do "ISS Excedente".
+ *
+ * @param {number|string} coluna Define a coluna a retornar
+ *   (0 → tabela completa, 1 → Nominal, 2 → Parc. Deduzir, 3+ → tributos).
+ * @return {Array}
+ * @customfunction
+ */
+function TABELA_ANEXO_V(coluna){
+  const tabela = [
+      [0.155, 0     , 0.25  , 0.15  , 0.141 , 0.0305, 0.2885, 0.14 ],
+      [0.180, 4500  , 0.23  , 0.15  , 0.141 , 0.0305, 0.2785, 0.17 ],
+      [0.195, 9900  , 0.24  , 0.15  , 0.1492, 0.0323, 0.2385, 0.19 ],
+      [0.205, 17100 , 0.21  , 0.15  , 0.1574, 0.0341, 0.2385, 0.21 ],
+      [0.230, 62100 , 0.23  , 0.125 , 0.141 , 0.0305, 0.2385, 0.235],
+      [0.350, 540000, 0.35  , 0.155 , 0.1644, 0.0356, 0.295 , null ], // ISS não se aplica na 6ª faixa
+      [null ,  null , 0.3007, 0.1634, 0.1843, 0.0399, 0.3117, null ]  // ISS Excedente
+  ];
+  
+  const colunas = {
+    1: tabela.map(r => [r[0]]), // Alíquota Nominal
+    2: tabela.map(r => [r[1]]), // Parcela a Deduzir
+    3: tabela.map(r => [r[2]]), // IRPJ
+    4: tabela.map(r => [r[3]]), // CSLL
+    5: tabela.map(r => [r[4]]), // COFINS
+    6: tabela.map(r => [r[5]]), // PIS
+    7: tabela.map(r => [r[6]]), // CPP
+    8: tabela.map(r => [r[7]]), // ISS
+  }
+  return colunas[coluna] || tabela;
+}
