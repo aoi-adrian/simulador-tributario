@@ -1,0 +1,250 @@
+/**
+ * @customfunction
+ */
+function TABELA_ANEXO_I(coluna) {
+  const tabela = [
+    [0.04,   0,        0.055,  0.035, 0.1274, 0.0276, 0.415, 0.340],
+    [0.073,  5940,     0.055,  0.035, 0.1274, 0.0276, 0.415, 0.340],
+    [0.095,  13860,    0.055,  0.035, 0.1274, 0.0276, 0.420, 0.335],
+    [0.107,  22500,    0.055,  0.035, 0.1274, 0.0276, 0.420, 0.335],
+    [0.143,  87300,    0.055,  0.035, 0.1274, 0.0276, 0.420, 0.335],
+    [0.19,   378000,   0.135,  0.100, 0.2827, 0.0613, 0.420, null ] // ICMS não se aplica na 6ª faixa
+  ];
+
+  const colunas = {
+    1: tabela.map(r => [r[0]]), // Alíquota Nominal
+    2: tabela.map(r => [r[1]]), // Valor a Deduzir
+    3: tabela.map(r => [r[2]]), // IRPJ
+    4: tabela.map(r => [r[3]]), // CSLL
+    5: tabela.map(r => [r[4]]), // COFINS
+    6: tabela.map(r => [r[5]]), // PIS
+    7: tabela.map(r => [r[6]]), // CPP
+    8: tabela.map(r => [r[7]])  // ICMS
+  };
+
+  return colunas[coluna] || tabela;
+}
+
+/**
+ * @customfunction
+ */
+function TABELA_ANEXO_II(coluna) {
+  const tabela = [
+    [0.045,  0,        0.055, 0.035, 0.1151, 0.0249, 0.375, 0.075, 0.32],
+    [0.078,  5940,     0.055, 0.035, 0.1151, 0.0249, 0.375, 0.075, 0.32],
+    [0.100,  13860,    0.055, 0.035, 0.1151, 0.0249, 0.375, 0.075, 0.32],
+    [0.112,  22500,    0.055, 0.035, 0.1151, 0.0249, 0.375, 0.075, 0.32],
+    [0.147,  85500,    0.055, 0.035, 0.1151, 0.0249, 0.375, 0.075, 0.32],
+    [0.300,  720000,   0.085, 0.075, 0.2096, 0.0454, 0.235, 0.350, null] // ICMS não se aplica na 6ª faixa
+  ];
+
+  const colunas = {
+    1: tabela.map(r => [r[0]]), // Alíquota Nominal
+    2: tabela.map(r => [r[1]]), // Valor a Deduzir
+    3: tabela.map(r => [r[2]]), // IRPJ
+    4: tabela.map(r => [r[3]]), // CSLL
+    5: tabela.map(r => [r[4]]), // COFINS
+    6: tabela.map(r => [r[5]]), // PIS
+    7: tabela.map(r => [r[6]]), // CPP
+    8: tabela.map(r => [r[7]]), // IPI
+    9: tabela.map(r => [r[8]])  // ICMS
+  };
+
+  return colunas[coluna] || tabela;
+}
+
+function getTabelas(anexo){
+  const map = {
+    "III": TABELA_ANEXO_III,
+    "IV": TABELA_ANEXO_IV,
+    "V": TABELA_ANEXO_V,
+  };
+
+  const fn = map[anexo];
+  if (!fn) throw new Error("Anexo inválido. Use III, IV ou V.");
+
+  const base = {
+    aliquotaNominal: fn(1),
+    parcelaDeduzir: fn(2),
+    irpj: fn(3),
+    csll: fn(4),
+    cofins: fn(5),
+    pis: fn(6),
+    iss: anexo === "IV" ? fn(7) : fn(8),
+  };
+
+  if (anexo !== "IV") {
+    base.cpp = fn(7); // só inclui quando existe
+  }
+
+  return base;
+}
+
+/**
+ * @customfunction
+ */
+function ENCONTRA_FAIXA(rbt12) {
+  const faixas = FAIXAS_FATURAMENTO();
+
+  for (let i = 0; i < faixas.length; i++){
+    let limMin = faixas[i][1];
+    let limMax = faixas[i][2];
+
+    if (rbt12 >= limMin && rbt12 <= limMax) {
+      return i;
+      break;
+    }
+  }
+}
+
+/**
+ * @customfunction
+ */
+function ALIQUOTA_ISS(rbt12, anexo) {
+  let aliquotaNominal, parcelaDeduzir, parcelaISS, i = ENCONTRA_FAIXA(rbt12);
+
+  if (rbt12 > 4800000) {
+    return 0; // fora do simples nacional
+  } else {
+      const tabelas = getTabelas(anexo);
+      // exceção: ISS na 6ª faixa usa dados da 5ª
+      if (i === 5) i = 4; 
+      aliquotaNominal = tabelas.aliquotaNominal[i][0];
+      parcelaDeduzir  = tabelas.parcelaDeduzir[i][0];
+      parcelaISS      = tabelas.iss[i][0];
+    }
+  const aliquotaEfetiva = ((rbt12 * aliquotaNominal) - parcelaDeduzir) / rbt12;
+  return aliquotaEfetiva * parcelaISS;
+}
+
+/**
+ * @customfunction
+ */
+function CALCULA_SN(rbt12, anexo, incluirISS = true) {
+  let aliquotaNominal, parcelaDeduzir, aliquotaISS = 0, i = ENCONTRA_FAIXA(rbt12);
+  const tabelas = getTabelas(anexo);
+
+  if (rbt12 > 4800000) return 0; // Fora do Simples Nacional
+
+  if (i === 5 && ["III", "IV", "V"].includes(anexo)){
+    aliquotaISS = ALIQUOTA_ISS(rbt12, anexo);
+  }
+  aliquotaNominal = tabelas.aliquotaNominal[i][0];
+  parcelaDeduzir  = tabelas.parcelaDeduzir[i][0];
+
+  const aliquotaBase = (rbt12 * aliquotaNominal - parcelaDeduzir) / rbt12;
+
+  if (incluirISS === false) {
+    return aliquotaBase;
+  } else {
+    return aliquotaBase + aliquotaISS;
+  }
+}
+
+/**
+ * @customfunction
+ */
+function EFETIVA_ISS(rbt12, anexo, difISS = false) {
+  const limMinISS = 0.02, limMaxISS = 0.05;
+  let baseISS = ALIQUOTA_ISS(rbt12, anexo);
+
+  if (rbt12 > 4800000) return 0; // Fora do Simples Nacional
+
+  // Se vier nulo ou indefinido, trata como 0
+  baseISS = baseISS || 0;
+
+  if (!difISS) {
+    // Normalização entre 2% e 5%
+    if (baseISS < limMinISS) return limMinISS;
+    if (baseISS > limMaxISS) return limMaxISS;
+    return baseISS;
+  } else {
+    // Diferença (quanto escapa dos limites)
+    if (baseISS < limMinISS) return baseISS - limMinISS; // valor negativo
+    if (baseISS > limMaxISS) return baseISS - limMaxISS; // valor positivo
+    return 0; // já está dentro do intervalo
+  }
+}
+
+/**
+ * Retorna valor numérico seguro da tabela (tabelas[coluna][idx]).
+ * Suporta casos em que o elemento é [num] (array de um elemento) ou num direto.
+ * Sempre devolve Number ou 0 como fallback.
+ */
+function safeTableValue(tabelas, coluna, idx) {
+  if (!tabelas || !coluna) return 0;
+  const col = tabelas[coluna];
+  if (!col) return 0;
+  const raw = col[idx];
+  if (raw === undefined || raw === null) return 0;
+  // se for array como [valor], pega o primeiro elemento
+  const val = Array.isArray(raw) ? raw[0] : raw;
+  const num = Number(val);
+  return Number.isFinite(num) ? num : 0;
+}
+
+/**
+ * REPART_TRIBUTOS_SN robusta
+ * Retorna a alíquota (fração) destinada ao tributo escolhido.
+ * @customfunction
+ */
+function REPART_TRIBUTOS_SN(rbt12, anexo, tributo) {
+  if (isNaN(rbt12) || rbt12 <= 0) return 0;
+  if (rbt12 > 4800000) return 0; // Fora do Simples Nacional
+
+  const tabelas = getTabelas(anexo);
+  const faixas = FAIXAS_FATURAMENTO();
+
+  // encontra índice da faixa (0..5)
+  let i = -1;
+  for (let k = 0; k < faixas.length; k++) {
+    if (rbt12 >= faixas[k][1] && rbt12 <= faixas[k][2]) {
+      i = k;
+      break;
+    }
+  }
+  if (i === -1) return 0;
+
+  const mapa = {
+    IRPJ: "irpj",
+    CSLL: "csll",
+    COFINS: "cofins",
+    PIS: "pis",
+    CPP: "cpp",
+    IPI: "ipi",
+    ISS: "iss",
+    ICMS: "icms"
+  };
+
+  const chave = (tributo || "").toString().trim().toUpperCase();
+  const coluna = mapa[chave];
+  if (!coluna || !(coluna in tabelas)) throw new Error("Tributo inválido");
+
+  // Alíquota efetiva sem ISS
+  const aliquotaEfetivaSemISS = Number(CALCULA_SN(rbt12, anexo, false)) || 0;
+
+  // Caso ISS → devolve normalizado (2% a 5%)
+  if (coluna === 'iss') {
+    return Number(EFETIVA_ISS(rbt12, anexo, false)) || 0;
+  }
+
+  // percentuais da tabela
+  const percentReparticao = safeTableValue(tabelas, coluna, i);
+  const pesoExcedente = safeTableValue(tabelas, coluna, 6);
+
+  // diferença ISS (pode ser positiva ou negativa)
+  const difISS = Number(EFETIVA_ISS(rbt12, anexo, true)) || 0;
+
+  // duas partes separadas
+  const baseTributo = percentReparticao * aliquotaEfetivaSemISS;
+  const extraTributo = pesoExcedente * difISS;
+
+  // soma final
+  const resultado = baseTributo + extraTributo;
+
+  return Number.isFinite(resultado) ? resultado : 0;
+}
+
+
+
+
