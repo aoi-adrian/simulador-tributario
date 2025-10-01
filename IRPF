@@ -1,0 +1,104 @@
+/**
+ * Retorna a tabela do IRPF filtrada pela competência
+ *
+ * @param {date|string} competencia Ex: 01/02/2023 (data) ou "01/02/2023" (texto)
+ * @param {number} [coluna] (opcional) número da coluna (1 a 8)
+ * @return {Array} Matriz com os dados filtrados
+ * @customfunction
+ */
+function TABELA_IRPF(competencia, coluna) {
+  const tabela = [
+    ['01/02/2023', 1, 0.00000, 1903.98, 0.000, 0.0000, 0.000, 189.59],
+    ['01/02/2023', 2, 1903.99, 2826.65, 0.075, 142.80, 0.000, 189.59],
+    ['01/02/2023', 3, 2826.66, 3751.05, 0.150, 354.80, 0.000, 189.59],
+    ['01/02/2023', 4, 3751.06, 4664.68, 0.225, 636.13, 0.000, 189.59],
+    ['01/02/2023', 5, 4664.69,    null, 0.275, 869.36, 0.000, 189.59],
+    
+    ['01/05/2023', 1, 0.00000, 2112.00, 0.000, 0.0000, 528.0, 189.59],
+    ['01/05/2023', 2, 2112.01, 2826.65, 0.075, 158.40, 528.0, 189.59],
+    ['01/05/2023', 3, 2826.66, 3751.05, 0.150, 370.40, 528.0, 189.59],
+    ['01/05/2023', 4, 3751.06, 4664.68, 0.225, 651.73, 528.0, 189.59],
+    ['01/05/2023', 5, 4664.69,    null, 0.275, 884.96, 528.0, 189.59],
+
+    ['01/02/2024', 1, 0.00000, 2259.20, 0.000, 0.0000, 564.8, 189.59],
+    ['01/02/2024', 2, 2259.21, 2826.65, 0.075, 169.44, 564.8, 189.59],
+    ['01/02/2024', 3, 2826.66, 3751.05, 0.150, 381.44, 564.8, 189.59],
+    ['01/02/2024', 4, 3751.06, 4664.68, 0.225, 662.77, 564.8, 189.59],
+    ['01/02/2024', 5, 4664.69,    null, 0.275, 896.00, 564.8, 189.59],
+
+    ['01/05/2025', 1, 0.00000, 2428.80, 0.000, 0.0000, 607.2, 189.59],
+    ['01/05/2025', 2, 2428.81, 2826.65, 0.075, 182.16, 607.2, 189.59],
+    ['01/05/2025', 3, 2826.66, 3751.05, 0.150, 394.16, 607.2, 189.59],
+    ['01/05/2025', 4, 3751.06, 4664.68, 0.225, 675.49, 607.2, 189.59],
+    ['01/05/2025', 5, 4664.69,    null, 0.275, 908.73, 607.2, 189.59]
+  ]
+
+  const colunas = {
+    1: tabela.map(r => [r[0]]), // Data Início
+    2: tabela.map(r => [r[1]]), // Faixa
+    3: tabela.map(r => [r[2]]), // Limite Mínimo
+    4: tabela.map(r => [r[3]]), // Limite Máximo
+    5: tabela.map(r => [r[4]]), // Alíquota (%)
+    6: tabela.map(r => [r[5]]), // Parcela a Deduzir do IR
+    7: tabela.map(r => [r[6]]), // Desconto Simplificado
+    8: tabela.map(r => [r[7]])  // Dependente Mensal
+  }
+  // Normaliza a data recebida → string dd/mm/yyyy
+  let competenciaStr;
+  if (competencia instanceof Date) {
+    competenciaStr = Utilities.formatDate(competencia, Session.getScriptTimeZone(), "dd/MM/yyyy");
+  } else {
+    competenciaStr = String(competencia);
+  }
+
+  // Filtra só as linhas da competência
+  const filtrada = tabela.filter(r => r[0] === competenciaStr);
+
+  if (filtrada.length === 0) {
+    return [["Competência inválida"]];
+  }
+
+  // Se coluna não for passada, retorna a tabela completa
+  if (!coluna) {
+    return filtrada;
+  }
+
+  // Se coluna for passada, retorna só aquela coluna
+  return filtrada.map(r => [r[coluna - 1]]);
+}
+
+/**
+ * @customfunction
+ */
+function ENCONTRA_FAIXA_IRPF(valorTrib = 6000) {
+  const faixas = TABELA_IRPF(competencia = '01/05/2025');
+
+  for (let i = 0; i < faixas.length; i++){
+    let limMin = faixas[i][2];
+    let limMax = faixas[i][3];
+
+    if (valorTrib >= limMin && valorTrib <= limMax) {
+      return i++;
+      break;
+    }
+  }
+}
+
+
+/**
+ * @customfunction
+ */
+function CALCULA_IRPF(competencia = '01/05/2025', valorTrib = 6000){
+  let tabela = TABELA_IRPF(competencia, 0);
+  let limMin = tabela[3][2];
+  let limMax = tabela[3][2];
+
+  //let base1 = if (valorTrib >= limMax[0][3]) ? limMax[0][3] : valorTrib);
+
+  return limMin;
+}
+
+
+
+
+
